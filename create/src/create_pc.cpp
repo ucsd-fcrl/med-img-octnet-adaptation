@@ -122,7 +122,7 @@ public:
     }
   }
 
-  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper_) {
+  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper_,float threshold) {
     OctreeCreateFromPCHelperCpu* helper = dynamic_cast<OctreeCreateFromPCHelperCpu*>(helper_);
     std::vector<int>& xyz_inds = helper->xyz_inds[helper->get_grid_idx(gd, gh, gw)];
 

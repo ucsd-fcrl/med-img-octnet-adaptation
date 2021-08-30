@@ -70,37 +70,38 @@ public:
 class OctreeCreateCpu {
 public:
   OctreeCreateCpu(ot_size_t grid_depth_, ot_size_t grid_height_, ot_size_t grid_width_, ot_size_t feature_size_) : 
-    grid_depth(grid_depth_), grid_height(grid_height_), grid_width(grid_width_), feature_size(feature_size_) 
+    grid_depth(grid_depth_), grid_height(grid_height_), grid_width(grid_width_), feature_size(feature_size_)
   {}
 
   virtual ~OctreeCreateCpu() {}
 
-  virtual octree* operator()(bool fit=false, int fit_multiply=1, bool pack=false, int n_threads=1);
+  virtual octree* operator()(bool fit=false, int fit_multiply=1, bool pack=false, int n_threads=1,float threshold=60);
 
 protected:
-  virtual octree* create_octree(bool fit, int fit_multiply, bool pack, int n_threads, OctreeCreateHelperCpu* helper);
+  virtual octree* create_octree(bool fit, int fit_multiply, bool pack, int n_threads, OctreeCreateHelperCpu* helper,float threshold=50);
 
   virtual octree* alloc_grid(); 
-  virtual void create_octree_structure(octree* grid, OctreeCreateHelperCpu* helper);
+  virtual void create_octree_structure(octree* grid, OctreeCreateHelperCpu* helper,float threshold=40);
   virtual void fit_octree(octree* grid, int fit_multiply, OctreeCreateHelperCpu* helper);
-  virtual void pack_octree(octree* grid, OctreeCreateHelperCpu* helper);
+  virtual void pack_octree(octree* grid, OctreeCreateHelperCpu* helper,float threshold=30);
   virtual void update_and_resize_octree(octree* grid);
-  virtual void fill_octree_data(octree* grid, bool packed, OctreeCreateHelperCpu* helper);
+  virtual void fill_octree_data(octree* grid, bool packed, OctreeCreateHelperCpu* helper,float threshold = 20);
 
-  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper) = 0;
+  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper,float threshold =10) = 0;
   virtual void get_data(bool oc, float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper, ot_data_t* dst) = 0;
 
   ot_size_t grid_depth;
   ot_size_t grid_height;
   ot_size_t grid_width;
   ot_size_t feature_size;
+  
 };
 
 
 
 extern "C" {
 
-octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads);
+octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads,float threshold=1e-9);
 octree* octree_create_from_dense2_cpu(const ot_data_t* occupancy, const ot_data_t* features, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads);
 
 octree* octree_create_from_mesh_cpu(int n_verts_, float* verts_, int n_faces_, int* faces, bool rescale_verts, ot_size_t depth, ot_size_t height, ot_size_t width, bool fit, int fit_multiply, bool pack, int pad, int n_threads);

@@ -25,6 +25,8 @@
 
 #include "octnet/create/create.h"
 #include "octnet/cpu/cpu.h"
+#include <iostream>
+using namespace std;
 
 class OctreeCreateFromDenseCpu : public OctreeCreateCpu {
 public:
@@ -34,7 +36,9 @@ public:
 
   virtual ~OctreeCreateFromDenseCpu() {}
   
-  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper) {
+  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper,float threshold) {
+    // threshold=10;
+    // cout<<threshold<<endl;
     int d1 = cz - vd/2.f; int d2 = cz + vd/2.f;
     int h1 = cy - vh/2.f; int h2 = cy + vh/2.f;
     int w1 = cx - vw/2.f; int w2 = cx + vw/2.f;
@@ -48,7 +52,7 @@ public:
             if(d >= 0 && h >= 0 && w >= 0 && d < depth && h < height && w < width) {
               float val = data[((f * depth + d) * height + h) * width + w];
               if(ref_exists) {
-                if(fabs(val - ref) >= 1e-9) {
+                if(fabs(val - ref) >= threshold) {
                   return true;
                 }
               }
@@ -93,9 +97,9 @@ private:
 
 
 extern "C"
-octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads) {
+octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads,float threshold) {
   OctreeCreateFromDenseCpu create(depth, height, width, data, feature_size);
-  return create(fit, fit_multiply, pack, n_threads);
+  return create(fit, fit_multiply, pack, n_threads,threshold);
 }
 
 
@@ -110,7 +114,7 @@ public:
 
   virtual ~OctreeCreateFromDense2Cpu() {}
   
-  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper) {
+  virtual bool is_occupied(float cx, float cy, float cz, float vd, float vh, float vw, int gd, int gh, int gw, OctreeCreateHelperCpu* helper,float threshold) {
     int d1 = cz - vd/2.f; int d2 = cz + vd/2.f;
     int h1 = cy - vh/2.f; int h2 = cy + vh/2.f;
     int w1 = cx - vw/2.f; int w2 = cx + vw/2.f;
