@@ -40,7 +40,7 @@ octree* OctreeCreateCpu::alloc_grid() {
 }
 
 
-void OctreeCreateCpu::create_octree_structure(octree* grid, OctreeCreateHelperCpu* helper) {
+void OctreeCreateCpu::create_octree_structure(octree* grid, OctreeCreateHelperCpu* helper,float threshold) {
   int n_blocks = octree_num_blocks(grid);
 
   #pragma omp parallel for
@@ -54,7 +54,7 @@ void OctreeCreateCpu::create_octree_structure(octree* grid, OctreeCreateHelperCp
     float cx = gw * 8 + 4;
     float cy = gh * 8 + 4;
     float cz = gd * 8 + 4;
-    if(is_occupied(cx,cy,cz, 8,8,8, gd,gh,gw, helper)) {
+    if(is_occupied(cx,cy,cz, 8,8,8, gd,gh,gw, helper,threshold)) {
       tree_set_bit(tree, 0);
 
       int bit_idx_l1 = 1;
@@ -65,7 +65,7 @@ void OctreeCreateCpu::create_octree_structure(octree* grid, OctreeCreateHelperCp
             float cy_l1 = cy + (hl1 * 4) - 2;
             float cz_l1 = cz + (dl1 * 4) - 2;
 
-            if(is_occupied(cx_l1,cy_l1,cz_l1, 4,4,4, gd,gh,gw, helper)) {
+            if(is_occupied(cx_l1,cy_l1,cz_l1, 4,4,4, gd,gh,gw, helper,threshold)) {
               tree_set_bit(tree, bit_idx_l1);
 
               int bit_idx_l2 = tree_child_bit_idx(bit_idx_l1);
@@ -76,7 +76,7 @@ void OctreeCreateCpu::create_octree_structure(octree* grid, OctreeCreateHelperCp
                     float cy_l2 = cy_l1 + (hl2 * 2) - 1;
                     float cz_l2 = cz_l1 + (dl2 * 2) - 1;
 
-                    if(is_occupied(cx_l2,cy_l2,cz_l2, 2,2,2, gd,gh,gw, helper)) {
+                    if(is_occupied(cx_l2,cy_l2,cz_l2, 2,2,2, gd,gh,gw, helper,threshold)) {
                       tree_set_bit(tree, bit_idx_l2);
                     }
                     bit_idx_l2++;
@@ -219,7 +219,7 @@ void OctreeCreateCpu::fit_octree(octree* grid, int fit_multiply, OctreeCreateHel
 }
 
 
-void OctreeCreateCpu::pack_octree(octree* grid, OctreeCreateHelperCpu* helper) {
+void OctreeCreateCpu::pack_octree(octree* grid, OctreeCreateHelperCpu* helper,float threshold) {
   int n_blocks = octree_num_blocks(grid);
   
   #pragma omp parallel for
@@ -259,7 +259,7 @@ void OctreeCreateCpu::pack_octree(octree* grid, OctreeCreateHelperCpu* helper) {
                         // printf("    [pack] CHECK %f,%f,%f, %d,%d,%d, %d,%d,%d\n", cx,cy,cz, wl2,hl2,dl2, wl3,hl3,dl3); 
                         // printf("    [pack] CHECK %f,%f,%f => %d \n", cx_l3, cy_l3, cz_l3, is_occupied(cx_l3, cy_l3, cz_l3, 1,1,1));
                         
-                        all_oc = all_oc && is_occupied(cx_l3, cy_l3, cz_l3, 1,1,1, gd,gh,gw, helper);
+                        all_oc = all_oc && is_occupied(cx_l3, cy_l3, cz_l3, 1,1,1, gd,gh,gw, helper,threshold);
                       }
                     }
                   }
@@ -297,7 +297,7 @@ void OctreeCreateCpu::pack_octree(octree* grid, OctreeCreateHelperCpu* helper) {
                   float cy_l2 = cy + (4*hl1 - 2) + (2*hl2 - 1);
                   float cz_l2 = cz + (4*dl1 - 2) + (2*dl2 - 1);
                   
-                  all_oc = all_oc && !tree_isset_bit(tree, bit_idx_l2) && is_occupied(cx_l2, cy_l2, cz_l2, 2,2,2, gd,gh,gw, helper);
+                  all_oc = all_oc && !tree_isset_bit(tree, bit_idx_l2) && is_occupied(cx_l2, cy_l2, cz_l2, 2,2,2, gd,gh,gw, helper,threshold);
                   bit_idx_l2++;
                 }
               }
@@ -328,7 +328,7 @@ void OctreeCreateCpu::pack_octree(octree* grid, OctreeCreateHelperCpu* helper) {
             float cy_l2 = cy + (4*hl1 - 2);
             float cz_l2 = cz + (4*dl1 - 2);
             
-            all_oc = all_oc && !tree_isset_bit(tree, bit_idx_l1) && is_occupied(cx_l2, cy_l2, cz_l2, 2,2,2, gd,gh,gw, helper);
+            all_oc = all_oc && !tree_isset_bit(tree, bit_idx_l1) && is_occupied(cx_l2, cy_l2, cz_l2, 2,2,2, gd,gh,gw, helper,threshold);
             bit_idx_l1++;
           }
         }
@@ -353,7 +353,7 @@ void OctreeCreateCpu::update_and_resize_octree(octree* grid) {
   octree_upd_prefix_leafs_cpu(grid);
 }
 
-void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHelperCpu* helper) {
+void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHelperCpu* helper,float threshold) {
   int n_blocks = octree_num_blocks(grid);
 
   #pragma omp parallel for
@@ -406,7 +406,7 @@ void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHe
                             float cz_l3 = cz_l2 + (dl3 * 1) - 0.5;
 
                             int data_idx = tree_data_idx(tree, bit_idx_l3, feature_size);
-                            bool oc = is_occupied(cx_l3,cy_l3,cz_l3, 1,1,1, gd,gh,gw, helper);
+                            bool oc = is_occupied(cx_l3,cy_l3,cz_l3, 1,1,1, gd,gh,gw, helper,threshold);
 
                             // if(grid_idx == 1030) printf("      get_data l3 %f %f %f\n", cx_l3,cy_l3,cz_l3);
                             get_data(oc, cx_l3,cy_l3,cz_l3, 1,1,1, gd,gh,gw, helper, data + data_idx);
@@ -418,7 +418,7 @@ void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHe
                     }
                     else {
                       int data_idx = tree_data_idx(tree, bit_idx_l2, feature_size);
-                      bool oc = packed && is_occupied(cx_l2,cy_l2,cz_l2, 2,2,2, gd,gh,gw, helper);
+                      bool oc = packed && is_occupied(cx_l2,cy_l2,cz_l2, 2,2,2, gd,gh,gw, helper,threshold);
                       // if(grid_idx == 1030) printf("      get_data l2 %f %f %f\n", cx_l2,cy_l2,cz_l2);
                       get_data(oc, cx_l2,cy_l2,cz_l2, 2,2,2, gd,gh,gw, helper, data + data_idx);
                     }
@@ -429,7 +429,7 @@ void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHe
             }
             else {
               int data_idx = tree_data_idx(tree, bit_idx_l1, feature_size);
-              bool oc = packed && is_occupied(cx_l1,cy_l1,cz_l1, 4,4,4, gd,gh,gw, helper);
+              bool oc = packed && is_occupied(cx_l1,cy_l1,cz_l1, 4,4,4, gd,gh,gw, helper,threshold);
               // if(grid_idx == 1030) printf("      get_data l1 %f %f %f\n", cx_l1,cy_l1,cz_l1);
               get_data(oc, cx_l1,cy_l1,cz_l1, 4,4,4, gd,gh,gw, helper, data + data_idx);
             }
@@ -441,7 +441,7 @@ void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHe
 
     }
     else {
-      bool oc = packed && is_occupied(cx,cy,cz, 8,8,8, gd,gh,gw, helper);
+      bool oc = packed && is_occupied(cx,cy,cz, 8,8,8, gd,gh,gw, helper,threshold);
       // if(grid_idx == 1030) printf("      get_data l0 %f %f %f\n", cx,cy,cz);
       get_data(oc, cx,cy,cz, 8,8,8, gd,gh,gw, helper, data);
     }
@@ -453,7 +453,7 @@ void OctreeCreateCpu::fill_octree_data(octree* grid, bool packed, OctreeCreateHe
 
 
 
-octree* OctreeCreateCpu::create_octree(bool fit, int fit_multiply, bool pack, int n_threads, OctreeCreateHelperCpu* helper) {
+octree* OctreeCreateCpu::create_octree(bool fit, int fit_multiply, bool pack, int n_threads, OctreeCreateHelperCpu* helper,float threshold) {
   octree* grid = alloc_grid();
 
   // printf("test feature access\n");
@@ -467,7 +467,7 @@ octree* OctreeCreateCpu::create_octree(bool fit, int fit_multiply, bool pack, in
 #if defined(_OPENMP)
   omp_set_num_threads(n_threads);
 #endif
-  create_octree_structure(grid, helper);
+  create_octree_structure(grid, helper,threshold);
   
   // printf("test feature access\n");
   // data = new float[feature_size];
@@ -484,7 +484,7 @@ octree* OctreeCreateCpu::create_octree(bool fit, int fit_multiply, bool pack, in
   //pack if needed
   if(pack) {
     //printf("  [OctreeCreateCpu] pack octree structure\n");
-    pack_octree(grid, helper);
+    pack_octree(grid, helper,threshold);
   }
 
   //update leafs, data array, data ptrs basd on structure
@@ -507,16 +507,16 @@ octree* OctreeCreateCpu::create_octree(bool fit, int fit_multiply, bool pack, in
 #if defined(_OPENMP)
   omp_set_num_threads(n_threads);
 #endif
-  fill_octree_data(grid, pack, helper);
+  fill_octree_data(grid, pack, helper,threshold);
   //printf("  [OctreeCreateCpu] done\n");
 
   return grid;
 }
 
 
-octree* OctreeCreateCpu::operator()(bool fit, int fit_multiply, bool pack, int n_threads) {
+octree* OctreeCreateCpu::operator()(bool fit, int fit_multiply, bool pack, int n_threads,float threshold) {
   OctreeCreateHelperCpu helper(grid_depth, grid_height, grid_width);
-  return create_octree(fit, fit_multiply, pack, n_threads, &helper);
+  return create_octree(fit, fit_multiply, pack, n_threads, &helper,threshold);
 }
 
 

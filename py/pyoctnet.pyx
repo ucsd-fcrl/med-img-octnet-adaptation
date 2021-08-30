@@ -160,7 +160,7 @@ cdef extern from "../core/include/octnet/cpu/combine.h":
   void octree_extract_feature_cpu(const octree* grid_in, int feature_from, int feature_to, octree* out);
 
 cdef extern from "../create/include/octnet/create/create.h":
-  octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads);
+  octree* octree_create_from_dense_cpu(const ot_data_t* data, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads,float threshold);
   octree* octree_create_from_dense2_cpu(const ot_data_t* occupancy, const ot_data_t* features, int feature_size, int depth, int height, int width, bool fit, int fit_multiply, bool pack, int n_threads);
   octree* octree_create_from_mesh_cpu(int n_verts_, float* verts_, int n_faces_, int* faces, bool rescale_verts, ot_size_t depth, ot_size_t height, ot_size_t width, bool fit, int fit_multiply, bool pack, int pad, int n_threads);
   octree* octree_create_from_off_cpu(const char* path, ot_size_t depth, ot_size_t height, ot_size_t width, const float R[9], bool fit, int fit_multiply, bool pack, int pad, int n_threads);
@@ -651,9 +651,10 @@ cdef class Octree:
   @param n_threads number of CPU threads that should be used for this function.
   """
   @classmethod
-  def create_from_dense(cls, float[:,:,:,::1] dense, bool fit=False, int fit_multiply=1, bool pack=False, int n_threads=1):
-    cdef octree* ret = octree_create_from_dense_cpu(&(dense[0,0,0,0]), dense.shape[0], dense.shape[1], dense.shape[2], dense.shape[3], fit, fit_multiply, pack, n_threads)
+  def create_from_dense(cls, float[:,:,:,::1] dense, bool fit=False, int fit_multiply=1, bool pack=False, int n_threads=1,float threshold=1e-10):
+    cdef octree* ret = octree_create_from_dense_cpu(&(dense[0,0,0,0]), dense.shape[0], dense.shape[1], dense.shape[2], dense.shape[3], fit, fit_multiply, pack, n_threads,threshold)
     cdef Octree grid = Octree()
+    print("Grid Made")
     grid.set_grid(ret)
     return grid
 

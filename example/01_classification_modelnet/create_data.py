@@ -11,7 +11,7 @@ import urllib
 import zipfile
 
 sys.path.append('../../py/')
-import pyoctnet
+# import pyoctnet
 
 
 random.seed(42)
